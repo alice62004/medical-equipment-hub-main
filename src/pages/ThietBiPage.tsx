@@ -38,43 +38,107 @@ export default function ThietBiPage() {
     setDialogOpen(true);
   };
 
-  const handleSave = () => {
-    if (!form.maThietBi || !form.tenThietBi) {
-      toast.error("Vui lòng nhập đầy đủ thông tin bắt buộc");
-      return;
-    }
-    if (!editing && data.some((t) => t.maThietBi === form.maThietBi)) {
-      toast.error("Mã thiết bị đã tồn tại");
-      return;
-    }
-    const item: ThietBi = {
-      maThietBi: form.maThietBi!,
-      tenThietBi: form.tenThietBi!,
-      donViTinh: form.donViTinh || "Cái",
-      ghiChu: form.ghiChu || "",
-    };
-    if (editing) {
-      thietBiStore.update((t) => t.maThietBi === editing.maThietBi, item);
-      toast.success("Cập nhật thiết bị thành công");
-    } else {
-      thietBiStore.add(item);
-      // Also create status record
-      const tt: TrangThaiThietBi = { id: `TT${Date.now()}`, maThietBi: item.maThietBi, soLuongTonKho: 0, soLuongDangSuDung: 0, soLuongHuHong: 0, soLuongThanhLy: 0 };
-      trangThaiStore.add(tt);
-      toast.success("Thêm thiết bị thành công");
-    }
-    setDialogOpen(false);
-    reload();
+  const handleSave = async () => {
+  if (!form.maThietBi || !form.tenThietBi) {
+    toast.error("Vui lòng nhập đầy đủ thông tin bắt buộc");
+    return;
+  }
+
+  if (!editing && data.some((t) => t.maThietBi === form.maThietBi)) {
+    toast.error("Mã thiết bị đã tồn tại");
+    return;
+  }
+
+  const item: ThietBi = {
+    maThietBi: form.maThietBi!,
+    tenThietBi: form.tenThietBi!,
+    donViTinh: form.donViTinh || "Cái",
+    ghiChu: form.ghiChu || "",
   };
 
-  const handleDelete = () => {
-    if (!deleteId) return;
+  try {
+    if (editing) {
+      // 🟡 UPDATE STORE
+      thietBiStore.update((t) => t.maThietBi === editing.maThietBi, item);
+
+      // 🔥 UPDATE MYSQL
+      await fetch(`http://localhost:3000/thietbi/${editing.maThietBi}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ten_thiet_bi: item.tenThietBi,
+          don_vi_tinh: item.donViTinh,
+          ghi_chu: item.ghiChu,
+        }),
+      });
+
+      toast.success("Cập nhật thiết bị thành công");
+    } else {
+      // 🟡 ADD STORE
+      thietBiStore.add(item);
+
+      // 🔥 ADD MYSQL
+      await fetch("http://localhost:3000/thietbi", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ma_thiet_bi: item.maThietBi,
+          ten_thiet_bi: item.tenThietBi,
+          don_vi_tinh: item.donViTinh,
+          ghi_chu: item.ghiChu,
+        }),
+      });
+
+      // 🔥 ADD TRẠNG THÁI MYSQL
+      await fetch("http://localhost:3000/trangthai", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ma_thiet_bi: item.maThietBi,
+        }),
+      });
+
+      // 🟡 STORE STATUS (giữ nguyên)
+      const tt: TrangThaiThietBi = {
+        id: `TT${Date.now()}`,
+        maThietBi: item.maThietBi,
+        soLuongTonKho: 0,
+        soLuongDangSuDung: 0,
+        soLuongHuHong: 0,
+        soLuongThanhLy: 0,
+      };
+      trangThaiStore.add(tt);
+
+      toast.success("Thêm thiết bị thành công");
+    }
+
+    setDialogOpen(false);
+    reload();
+  } catch (err) {
+    toast.error("Lỗi khi sync MySQL");
+  }
+};
+
+  const handleDelete = async () => {
+  if (!deleteId) return;
+
+  try {
+    // 🟡 XÓA STORE
     thietBiStore.remove((t) => t.maThietBi === deleteId);
     trangThaiStore.remove((t) => t.maThietBi === deleteId);
+
+    // 🔥 XÓA MYSQL
+    await fetch(`http://localhost:3000/thietbi/${deleteId}`, {
+      method: "DELETE",
+    });
+
     toast.success("Xóa thiết bị thành công");
     setDeleteId(null);
     reload();
-  };
+  } catch (err) {
+    toast.error("Lỗi khi xóa MySQL");
+  }
+};
 
   return (
     <div>
