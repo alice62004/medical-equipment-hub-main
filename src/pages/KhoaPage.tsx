@@ -42,37 +42,80 @@ export default function KhoaPage() {
     setDialogOpen(true);
   };
 
-  const handleSave = () => {
-    if (!form.maKhoa || !form.tenKhoa) {
-      toast.error("Vui lòng nhập đầy đủ thông tin bắt buộc");
-      return;
-    }
-    if (!editing && data.some((k) => k.maKhoa === form.maKhoa)) {
-      toast.error("Mã khoa đã tồn tại");
-      return;
-    }
-    const item: Khoa = {
-      maKhoa: form.maKhoa!,
-      tenKhoa: form.tenKhoa!,
-    };
-    if (editing) {
-      khoaStore.update((k) => k.maKhoa === editing.maKhoa, item);
-      toast.success("Cập nhật khoa thành công");
-    } else {
-      khoaStore.add(item);
-      toast.success("Thêm khoa thành công");
-    }
-    setDialogOpen(false);
-    reload();
+  const handleSave = async () => {
+  if (!form.maKhoa || !form.tenKhoa) {
+    toast.error("Vui lòng nhập đầy đủ thông tin bắt buộc");
+    return;
+  }
+
+  if (!editing && data.some((k) => k.maKhoa === form.maKhoa)) {
+    toast.error("Mã khoa đã tồn tại");
+    return;
+  }
+
+  const item: Khoa = {
+    maKhoa: form.maKhoa!,
+    tenKhoa: form.tenKhoa!,
   };
 
-  const handleDelete = () => {
-    if (!deleteId) return;
+  try {
+    if (editing) {
+      // CALL API UPDATE
+      await fetch(`http://localhost:3000/khoa/${editing.maKhoa}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ten_khoa: item.tenKhoa,
+        }),
+      });
+
+      // UPDATE STORE sau khi API OK
+      khoaStore.update((k) => k.maKhoa === editing.maKhoa, item);
+
+      toast.success("Cập nhật khoa thành công");
+    } else {
+      // 🔥 CALL API ADD
+      await fetch("http://localhost:3000/khoa", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ma_khoa: item.maKhoa,
+          ten_khoa: item.tenKhoa,
+        }),
+      });
+
+      // ADD STORE sau khi API OK
+      khoaStore.add(item);
+
+      toast.success("Thêm khoa thành công");
+    }
+
+    setDialogOpen(false);
+    reload();
+  } catch (err) {
+    toast.error("Lỗi khi sync MySQL");
+  }
+};
+
+  const handleDelete = async () => {
+  if (!deleteId) return;
+
+  try {
+    // CALL API DELETE
+    await fetch(`http://localhost:3000/khoa/${deleteId}`, {
+      method: "DELETE",
+    });
+
+    // DELETE STORE sau khi API OK
     khoaStore.remove((k) => k.maKhoa === deleteId);
+
     toast.success("Xóa khoa thành công");
     setDeleteId(null);
     reload();
-  };
+  } catch (err) {
+    toast.error("Lỗi khi xóa MySQL");
+  }
+};
 
   return (
     <div>

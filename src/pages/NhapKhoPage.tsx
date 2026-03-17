@@ -38,38 +38,58 @@ export default function NhapKhoPage() {
     setDialogOpen(true);
   };
 
-  const handleSave = () => {
-    if (!form.maThietBi || !form.maNhaCungCap || !form.maNhanVien || !form.soLuong || form.soLuong <= 0) {
-      toast.error("Vui lòng nhập đầy đủ thông tin hợp lệ");
-      return;
-    }
-    const thanhTien = (form.soLuong || 0) * (form.donGiaNhap || 0);
-    const item: PhieuNhapKho = {
-      maPhieuNhap: form.maPhieuNhap!,
-      ngayNhap: form.ngayNhap || new Date().toISOString().slice(0, 10),
-      maNhanVien: form.maNhanVien!,
-      maNhaCungCap: form.maNhaCungCap!,
-      maThietBi: form.maThietBi!,
-      soLuong: form.soLuong!,
-      donGiaNhap: form.donGiaNhap || 0,
-      thanhTien,
-      hanSuDung: form.hanSuDung || "",
-      ghiChu: form.ghiChu || "",
-    };
-    phieuNhapStore.add(item);
+  const handleSave = async () => {
+  if (!form.maThietBi || !form.maNhaCungCap || !form.maNhanVien || !form.soLuong || form.soLuong <= 0) {
+    toast.error("Vui lòng nhập đầy đủ thông tin hợp lệ");
+    return;
+  }
 
-    // Update inventory
-    const allTT = trangThaiStore.getAll();
-    const tt = allTT.find((t) => t.maThietBi === item.maThietBi);
-    if (tt) {
-      trangThaiStore.update((t) => t.maThietBi === item.maThietBi, { ...tt, soLuongTonKho: tt.soLuongTonKho + item.soLuong });
-    }
+  const thanhTien = (form.soLuong || 0) * (form.donGiaNhap || 0);
+
+  const item: PhieuNhapKho = {
+    maPhieuNhap: form.maPhieuNhap!,
+    ngayNhap: form.ngayNhap || new Date().toISOString().slice(0, 10),
+    maNhanVien: form.maNhanVien!,
+    maNhaCungCap: form.maNhaCungCap!,
+    maThietBi: form.maThietBi!,
+    soLuong: form.soLuong!,
+    donGiaNhap: form.donGiaNhap || 0,
+    thanhTien,
+    hanSuDung: form.hanSuDung || "",
+    ghiChu: form.ghiChu || "",
+  };
+
+  try {
+    // 🔥 CALL API
+    await fetch("http://localhost:3000/phieunhap", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        ma_phieu_nhap: item.maPhieuNhap,
+        ngay_nhap: item.ngayNhap,
+        ma_nhan_vien: item.maNhanVien,
+        ma_nha_cung_cap: item.maNhaCungCap,
+        ma_thiet_bi: item.maThietBi,
+        so_luong: item.soLuong,
+        don_gia_nhap: item.donGiaNhap,
+        thanh_tien: item.thanhTien,
+        han_su_dung: item.hanSuDung,
+        ghi_chu: item.ghiChu,
+      }),
+    });
+
+    // 👉 update UI sau khi API OK
+    phieuNhapStore.add(item);
 
     toast.success("Lập phiếu nhập kho thành công");
     setDialogOpen(false);
     reload();
+    } catch (err) {
+      toast.error("Lỗi khi lưu MySQL");
+    }
   };
-
   return (
     <div>
       <div className="page-header flex items-center justify-between flex-wrap gap-4">

@@ -13,21 +13,70 @@ app.get("/test", async (req, res) => {
 });
 
 /* ================= NGUOI DUNG ================= */
+// GET 1
 app.get("/nguoidung", async (req, res) => {
   const [rows] = await db.query("SELECT * FROM nguoi_dung");
   res.json(rows);
 });
 
+app.get("/nguoidung/:id", async (req, res) => {
+  const [rows] = await db.query(
+    "SELECT * FROM nguoi_dung WHERE id=?",
+    [req.params.id]
+  );
+  res.json(rows[0]);
+});
+
 app.post("/nguoidung", async (req, res) => {
   const { id, email, mat_khau, ho_ten, vai_tro } = req.body;
+
+  if (!id || !email || !mat_khau) {
+    return res.status(400).json({
+      message: "Thiếu dữ liệu"
+    });
+  }
+
+  if (!email.includes("@")) {
+    return res.status(400).json({
+      message: "Email không hợp lệ"
+    });
+  }
   await db.query(
-    `INSERT INTO nguoi_dung VALUES (?, ?, ?, ?, ?, 1, 0)`,
+    "INSERT INTO nguoi_dung VALUES (?, ?, ?, ?, ?)",
     [id, email, mat_khau, ho_ten, vai_tro]
   );
-  res.json({ message: "OK" });
+
+  res.json({ message: "Thêm OK" });
+});
+// UPDATE
+app.put("/nguoidung/:id", async (req, res) => {
+  const { email, mat_khau, ho_ten, vai_tro } = req.body;
+
+  await db.query(
+    `UPDATE nguoi_dung 
+     SET email=?, mat_khau=?, ho_ten=?, vai_tro=? 
+     WHERE id=?`,
+    [email, mat_khau, ho_ten, vai_tro, req.params.id]
+  );
+
+  res.json({ message: "Update OK" });
+});
+
+// DELETE
+app.delete("/nguoidung/:id", async (req, res) => {
+  await db.query("DELETE FROM nguoi_dung WHERE id=?", [
+    req.params.id,
+  ]);
+
+  res.json({ message: "Delete OK" });
 });
 
 /* ================= THIET BI ================= */
+app.get("/thietbi", async (req, res) => {
+  const [rows] = await db.query("SELECT * FROM thiet_bi");
+  res.json(rows);
+});
+
 app.get("/thietbi/:id", async (req, res) => {
   const [rows] = await db.query(
     "SELECT * FROM thiet_bi WHERE ma_thiet_bi=?",
@@ -44,6 +93,17 @@ app.get("/thietbi/:id", async (req, res) => {
 app.post("/thietbi", async (req, res) => {
   const { ma_thiet_bi, ten_thiet_bi, don_vi_tinh, ghi_chu } = req.body;
 
+  if (!ma_thiet_bi || !ten_thiet_bi || !don_vi_tinh) {
+    return res.status(400).json({
+      message: "Thiếu dữ liệu bắt buộc"
+    });
+  }
+
+  if (typeof ma_thiet_bi !== "string") {
+    return res.status(400).json({
+      message: "Mã thiết bị phải là chuỗi"
+    });
+  }
   await db.query(
     `INSERT INTO thiet_bi VALUES (?, ?, ?, ?)`,
     [ma_thiet_bi, ten_thiet_bi, don_vi_tinh, ghi_chu]
@@ -55,6 +115,11 @@ app.post("/thietbi", async (req, res) => {
 app.put("/thietbi/:id", async (req, res) => {
   const { ten_thiet_bi, don_vi_tinh, ghi_chu } = req.body;
 
+  if (!ten_thiet_bi || !don_vi_tinh) {
+    return res.status(400).json({
+      message: "Không được để trống"
+    });
+  }
   await db.query(
     `UPDATE thiet_bi 
      SET ten_thiet_bi=?, don_vi_tinh=?, ghi_chu=? 
@@ -78,27 +143,75 @@ app.get("/khoa", async (req, res) => {
   res.json(rows);
 });
 
+app.get("/khoa/:id", async (req, res) => {
+  const [rows] = await db.query(
+    "SELECT * FROM khoa WHERE ma_khoa=?",
+    [req.params.id]
+  );
+  res.json(rows[0]);
+});
+
 app.post("/khoa", async (req, res) => {
   const { ma_khoa, ten_khoa } = req.body;
-  await db.query(`INSERT INTO khoa VALUES (?, ?)`, [ma_khoa, ten_khoa]);
-  res.json({ message: "OK" });
-});
-
-/* ================= NHAN VIEN ================= */
-app.get("/nhanvien", async (req, res) => {
-  const [rows] = await db.query("SELECT * FROM nhan_vien");
-  res.json(rows);
-});
-
-app.post("/nhanvien", async (req, res) => {
-  const { ma_nv, ten_nv, chuc_vu, so_dien_thoai, email } = req.body;
 
   await db.query(
-    `INSERT INTO nhan_vien VALUES (?, ?, ?, ?, ?)`,
-    [ma_nv, ten_nv, chuc_vu, so_dien_thoai, email]
+    "INSERT INTO khoa VALUES (?, ?)",
+    [ma_khoa, ten_khoa]
   );
 
-  res.json({ message: "OK" });
+  res.json({ message: "Thêm OK" });
+});
+// UPDATE
+app.put("/khoa/:id", async (req, res) => {
+  const { ten_khoa } = req.body;
+
+  await db.query(
+    "UPDATE khoa SET ten_khoa=? WHERE ma_khoa=?",
+    [ten_khoa, req.params.id]
+  );
+
+  res.json({ message: "Update OK" });
+});
+
+// DELETE
+app.delete("/khoa/:id", async (req, res) => {
+  await db.query("DELETE FROM khoa WHERE ma_khoa=?", [
+    req.params.id,
+  ]);
+
+  res.json({ message: "Delete OK" });
+});
+/* ================= NHAN VIEN ================= */
+// GET 1
+app.get("/nhanvien/:id", async (req, res) => {
+  const [rows] = await db.query(
+    "SELECT * FROM nhan_vien WHERE ma_nv=?",
+    [req.params.id]
+  );
+  res.json(rows[0]);
+});
+
+// UPDATE
+app.put("/nhanvien/:id", async (req, res) => {
+  const { ten_nv, chuc_vu, so_dien_thoai, email } = req.body;
+
+  await db.query(
+    `UPDATE nhan_vien 
+     SET ten_nv=?, chuc_vu=?, so_dien_thoai=?, email=? 
+     WHERE ma_nv=?`,
+    [ten_nv, chuc_vu, so_dien_thoai, email, req.params.id]
+  );
+
+  res.json({ message: "Update OK" });
+});
+
+// DELETE
+app.delete("/nhanvien/:id", async (req, res) => {
+  await db.query("DELETE FROM nhan_vien WHERE ma_nv=?", [
+    req.params.id,
+  ]);
+
+  res.json({ message: "Delete OK" });
 });
 
 /* ================= NHA CUNG CAP ================= */
@@ -119,14 +232,18 @@ app.post("/nhacungcap", async (req, res) => {
 });
 
 /* ================= PHIEU NHAP ================= */
-app.get("/phieunhap", async (req, res) => {
-  const [rows] = await db.query("SELECT * FROM phieu_nhap_kho");
-  res.json(rows);
+// GET 1
+app.get("/phieunhap/:id", async (req, res) => {
+  const [rows] = await db.query(
+    "SELECT * FROM phieu_nhap_kho WHERE ma_phieu_nhap=?",
+    [req.params.id]
+  );
+  res.json(rows[0]);
 });
 
-app.post("/phieunhap", async (req, res) => {
+// UPDATE
+app.put("/phieunhap/:id", async (req, res) => {
   const {
-    ma_phieu_nhap,
     ngay_nhap,
     ma_nhan_vien,
     ma_nha_cung_cap,
@@ -139,9 +256,12 @@ app.post("/phieunhap", async (req, res) => {
   } = req.body;
 
   await db.query(
-    `INSERT INTO phieu_nhap_kho VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    `UPDATE phieu_nhap_kho SET 
+      ngay_nhap=?, ma_nhan_vien=?, ma_nha_cung_cap=?, 
+      ma_thiet_bi=?, so_luong=?, don_gia_nhap=?, 
+      thanh_tien=?, han_su_dung=?, ghi_chu=? 
+     WHERE ma_phieu_nhap=?`,
     [
-      ma_phieu_nhap,
       ngay_nhap,
       ma_nhan_vien,
       ma_nha_cung_cap,
@@ -151,21 +271,35 @@ app.post("/phieunhap", async (req, res) => {
       thanh_tien,
       han_su_dung,
       ghi_chu,
+      req.params.id,
     ]
   );
 
-  res.json({ message: "OK" });
+  res.json({ message: "Update OK" });
 });
 
+// DELETE
+app.delete("/phieunhap/:id", async (req, res) => {
+  await db.query(
+    "DELETE FROM phieu_nhap_kho WHERE ma_phieu_nhap=?",
+    [req.params.id]
+  );
+
+  res.json({ message: "Delete OK" });
+});
 /* ================= PHIEU XUAT ================= */
-app.get("/phieuxuat", async (req, res) => {
-  const [rows] = await db.query("SELECT * FROM phieu_xuat_kho");
-  res.json(rows);
+// GET 1
+app.get("/phieuxuat/:id", async (req, res) => {
+  const [rows] = await db.query(
+    "SELECT * FROM phieu_xuat_kho WHERE ma_phieu_xuat=?",
+    [req.params.id]
+  );
+  res.json(rows[0]);
 });
 
-app.post("/phieuxuat", async (req, res) => {
+// UPDATE
+app.put("/phieuxuat/:id", async (req, res) => {
   const {
-    ma_phieu_xuat,
     ngay_xuat,
     ma_nhan_vien,
     ma_thiet_bi,
@@ -177,9 +311,12 @@ app.post("/phieuxuat", async (req, res) => {
   } = req.body;
 
   await db.query(
-    `INSERT INTO phieu_xuat_kho VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    `UPDATE phieu_xuat_kho SET 
+      ngay_xuat=?, ma_nhan_vien=?, ma_thiet_bi=?, 
+      so_luong=?, don_gia_xuat=?, thanh_tien=?, 
+      muc_dich_xuat=?, ghi_chu=? 
+     WHERE ma_phieu_xuat=?`,
     [
-      ma_phieu_xuat,
       ngay_xuat,
       ma_nhan_vien,
       ma_thiet_bi,
@@ -188,12 +325,22 @@ app.post("/phieuxuat", async (req, res) => {
       thanh_tien,
       muc_dich_xuat,
       ghi_chu,
+      req.params.id,
     ]
   );
 
-  res.json({ message: "OK" });
+  res.json({ message: "Update OK" });
 });
 
+// DELETE
+app.delete("/phieuxuat/:id", async (req, res) => {
+  await db.query(
+    "DELETE FROM phieu_xuat_kho WHERE ma_phieu_xuat=?",
+    [req.params.id]
+  );
+
+  res.json({ message: "Delete OK" });
+});
 /* ================= CAP PHAT ================= */
 app.get("/capphat", async (req, res) => {
   const [rows] = await db.query("SELECT * FROM phieu_cap_phat");
@@ -237,3 +384,12 @@ app.post("/capphat", async (req, res) => {
 app.listen(3000, () => {
   console.log("Server chạy ở http://localhost:3000");
 });
+
+// app.post("/thietbi", async (req, res) => {
+//   try {
+//     const result = await service.create(req.body);
+//     res.json(result);
+//   } catch (err) {
+//     res.status(400).json({ error: err.message });
+//   }
+// });

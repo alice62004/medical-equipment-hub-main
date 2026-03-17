@@ -40,7 +40,7 @@ export default function CapPhatPage() {
     setDialogOpen(true);
   };
 
-  const handleSave = () => {
+  const handleSave = async() => {
     if (!form.maThietBi || !form.maNhanVien || !form.maKhoa || !form.nguoiNhan || !form.soLuong || form.soLuong <= 0) {
       toast.error("Vui lòng nhập đầy đủ thông tin");
       return;
@@ -62,15 +62,44 @@ export default function CapPhatPage() {
       ngayTraThucTe: null,
       trangThai: "DANG_SU_DUNG",
     };
-    capPhatStore.add(item);
-    if (tt) {
-      trangThaiStore.update((t) => t.maThietBi === item.maThietBi, {
-        ...tt, soLuongTonKho: tt.soLuongTonKho - item.soLuong, soLuongDangSuDung: tt.soLuongDangSuDung + item.soLuong,
+    try {
+    // CALL API
+      await fetch("http://localhost:3000/capphat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          ma_cap_phat: item.maCapPhat,
+          ma_thiet_bi: item.maThietBi,
+          so_luong: item.soLuong,
+          ma_nhan_vien: item.maNhanVien,
+          nguoi_nhan: item.nguoiNhan,
+          ma_khoa: item.maKhoa,
+          ngay_cap_phat: item.ngayCapPhat,
+          ngay_tra_du_kien: item.ngayTraDuKien,
+          ngay_tra_thuc_te: null,
+          trang_thai: item.trangThai,
+        }),
       });
+
+      // 👉 update UI sau khi API OK
+      capPhatStore.add(item);
+
+      if (tt) {
+        trangThaiStore.update((t) => t.maThietBi === item.maThietBi, {
+          ...tt,
+          soLuongTonKho: tt.soLuongTonKho - item.soLuong,
+          soLuongDangSuDung: tt.soLuongDangSuDung + item.soLuong,
+        });
+      }
+
+      toast.success("Cấp phát thiết bị thành công");
+      setDialogOpen(false);
+      reload();
+    } catch (err) {
+      toast.error("Lỗi khi lưu MySQL");
     }
-    toast.success("Cấp phát thiết bị thành công");
-    setDialogOpen(false);
-    reload();
   };
 
   return (
