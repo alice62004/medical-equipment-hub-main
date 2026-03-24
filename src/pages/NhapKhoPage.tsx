@@ -39,7 +39,7 @@ export default function NhapKhoPage() {
   };
 
   const handleSave = async () => {
-  if (!form.maThietBi || !form.maNhaCungCap || !form.maNhanVien || !form.soLuong || form.soLuong <= 0) {
+  if (!form.maThietBi || !form.maNhaCungCap || !form.maNhanVien || !form.soLuong || form.soLuong || form.donGiaNhap <= 0) {
     toast.error("Vui lòng nhập đầy đủ thông tin hợp lệ");
     return;
   }

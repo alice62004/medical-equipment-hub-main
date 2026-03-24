@@ -65,4 +65,3 @@ describe("ThietBi Service", () => {
 
 });
 
-//2.Thêm validation cho tất cả dữ liệu đầu vào
